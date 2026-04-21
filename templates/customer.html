@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Arca Hotel — Customer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --gold: #C9A84C;
+      --gold-light: #E8C97A;
+      --navy: #0F1E35;
+      --navy-mid: #1A2F4A;
+      --navy-light: #243D5E;
+      --cream: #F8F4EC;
+      --cream-dark: #EDE8DC;
+      --text-muted: #8A9BB0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      min-height: 100vh;
+      color: var(--navy);
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      position: fixed; left: 0; top: 0; bottom: 0; width: 240px;
+      background: var(--navy);
+      display: flex; flex-direction: column;
+      z-index: 50;
+    }
+    .sidebar-logo {
+      padding: 32px 28px 24px;
+      border-bottom: 1px solid rgba(201,168,76,.2);
+    }
+    .sidebar-logo h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px; font-weight: 700;
+      color: var(--gold);
+      letter-spacing: .05em;
+    }
+    .sidebar-logo p { font-size: 11px; color: var(--text-muted); letter-spacing: .12em; text-transform: uppercase; margin-top: 2px; }
+    .sidebar nav { padding: 20px 16px; flex: 1; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 14px; border-radius: 10px;
+      color: var(--text-muted); font-size: 13.5px; font-weight: 500;
+      text-decoration: none; margin-bottom: 4px;
+      transition: all .2s;
+    }
+    .nav-item:hover { background: rgba(255,255,255,.06); color: #fff; }
+    .nav-item.active { background: rgba(201,168,76,.12); color: var(--gold); }
+    .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    /* ── Main Content ── */
+    .main { margin-left: 240px; min-height: 100vh; }
+
+    /* ── Top Header ── */
+    .topbar {
+      background: white;
+      border-bottom: 1px solid var(--cream-dark);
+      padding: 18px 36px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .topbar-title { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 700; color: var(--navy); }
+    .topbar-sub { font-size: 12.5px; color: var(--text-muted); margin-top: 1px; }
+    .btn-add {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--navy); color: white;
+      padding: 10px 20px; border-radius: 10px;
+      font-size: 13.5px; font-weight: 500; cursor: pointer; border: none;
+      transition: background .2s;
+    }
+    .btn-add:hover { background: var(--navy-light); }
+    .btn-add svg { width: 15px; height: 15px; }
+
+    /* ── Content Area ── */
+    .content { padding: 32px 36px; }
+
+    /* ── Stats ── */
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
+    .stat-card {
+      background: white; border-radius: 14px;
+      padding: 20px 24px;
+      border: 1px solid var(--cream-dark);
+      position: relative; overflow: hidden;
+    }
+    .stat-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--gold), var(--gold-light));
+    }
+    .stat-label { font-size: 11.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted); font-weight: 500; }
+    .stat-value { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 700; color: var(--navy); line-height: 1.1; margin-top: 4px; }
+    .stat-icon {
+      position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+      width: 40px; height: 40px; border-radius: 10px;
+      background: var(--cream); display: flex; align-items: center; justify-content: center;
+    }
+    .stat-icon svg { width: 18px; height: 18px; color: var(--gold); }
+
+    /* ── Table ── */
+    .table-card {
+      background: white; border-radius: 16px;
+      border: 1px solid var(--cream-dark);
+      overflow: hidden;
+    }
+    .table-header {
+      padding: 20px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--cream-dark);
+    }
+    .table-title { font-weight: 600; font-size: 15px; color: var(--navy); }
+    .search-box {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--cream); border-radius: 8px; padding: 8px 14px;
+      border: 1px solid var(--cream-dark);
+    }
+    .search-box svg { width: 14px; height: 14px; color: var(--text-muted); flex-shrink: 0; }
+    .search-box input {
+      background: none; border: none; outline: none;
+      font-size: 13px; color: var(--navy); width: 180px; font-family: 'DM Sans', sans-serif;
+    }
+    .search-box input::placeholder { color: var(--text-muted); }
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { background: var(--cream); }
+    th {
+      padding: 12px 20px; text-align: left;
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .1em; color: var(--text-muted);
+    }
+    tbody tr {
+      border-top: 1px solid var(--cream-dark);
+      transition: background .15s;
+    }
+    tbody tr:hover { background: #FDFCFA; }
+    td { padding: 14px 20px; font-size: 13.5px; vertical-align: middle; }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--navy-mid), var(--navy-light));
+      display: inline-flex; align-items: center; justify-content: center;
+      font-family: 'Cormorant Garamond', serif; font-size: 15px; font-weight: 700;
+      color: var(--gold); flex-shrink: 0;
+    }
+    .customer-info { display: flex; align-items: center; gap: 12px; }
+    .customer-name { font-weight: 600; color: var(--navy); font-size: 14px; }
+    .customer-email { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500;
+    }
+    .badge-active { background: #EAF7F0; color: #2A7A55; }
+    .btn-delete {
+      background: none; border: 1px solid #FADCD9; color: #C0392B;
+      padding: 5px 12px; border-radius: 7px; font-size: 12px;
+      cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 500;
+      transition: all .2s;
+    }
+    .btn-delete:hover { background: #FADCD9; }
+    .empty-state {
+      text-align: center; padding: 60px 20px;
+      color: var(--text-muted);
+    }
+    .empty-state svg { width: 48px; height: 48px; margin: 0 auto 12px; color: var(--cream-dark); }
+    .empty-state p { font-size: 14px; }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(15,30,53,.55);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; opacity: 0; pointer-events: none; transition: opacity .25s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: white; border-radius: 20px;
+      padding: 36px; width: 480px; max-width: 95vw;
+      transform: translateY(16px) scale(.97);
+      transition: transform .25s;
+      position: relative;
+    }
+    .modal-overlay.open .modal { transform: translateY(0) scale(1); }
+    .modal-title { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+    .modal-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 28px; }
+    .form-group { margin-bottom: 18px; }
+    .form-label { display: block; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--navy); margin-bottom: 7px; }
+    .form-input {
+      width: 100%; padding: 11px 14px; border-radius: 10px;
+      border: 1.5px solid var(--cream-dark); font-size: 14px;
+      font-family: 'DM Sans', sans-serif; color: var(--navy);
+      background: var(--cream); transition: border-color .2s;
+      outline: none;
+    }
+    .form-input:focus { border-color: var(--gold); background: white; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .btn-submit {
+      width: 100%; padding: 13px; border-radius: 11px;
+      background: var(--navy); color: white; border: none;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; margin-top: 8px;
+      transition: background .2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-submit:hover { background: var(--navy-light); }
+    .btn-submit:disabled { opacity: .6; cursor: not-allowed; }
+    .btn-cancel {
+      position: absolute; top: 20px; right: 20px;
+      background: var(--cream); border: none; width: 32px; height: 32px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--text-muted); transition: background .2s;
+    }
+    .btn-cancel:hover { background: var(--cream-dark); }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 28px; right: 28px;
+      background: var(--navy); color: white;
+      padding: 14px 20px; border-radius: 12px; font-size: 13.5px;
+      display: flex; align-items: center; gap: 10px;
+      transform: translateY(80px); opacity: 0;
+      transition: all .3s; z-index: 200; min-width: 240px;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { border-left: 4px solid var(--gold); }
+    .toast.error { border-left: 4px solid #E74C3C; }
+    .toast svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    .spinner {
+      width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3);
+      border-top-color: white; border-radius: 50%; animation: spin .6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Loading skeleton ── */
+    .skeleton { background: linear-gradient(90deg, var(--cream) 25%, var(--cream-dark) 50%, var(--cream) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 6px; }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  </style>
+</head>
+<body>
+
+<!-- ══════════ SIDEBAR ══════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h1>ARCA</h1>
+    <p>Hotel Management</p>
+  </div>
+  <nav>
+    <a href="/" class="nav-item">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </a>
+    <a href="/customer" class="nav-item active">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      Customers
+    </a>
+    <a href="/owner" class="nav-item">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4h-4a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Owners
+    </a>
+    <a href="/room" class="nav-item">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Rooms
+    </a>
+    <a href="#" class="nav-item">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      Bookings
+    </a>
+    <a href="#" class="nav-item">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      Payments
+    </a>
+  </nav>
+</aside>
+
+<!-- ══════════ MAIN ══════════ -->
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Customer Management</div>
+      <div class="topbar-sub">Kelola data tamu hotel Arca</div>
+    </div>
+    <button class="btn-add" onclick="openModal()">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Tambah Customer
+    </button>
+  </div>
+
+  <div class="content">
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">Total Customer</div>
+        <div class="stat-value" id="statTotal">—</div>
+        <div class="stat-icon">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Terdaftar Hari Ini</div>
+        <div class="stat-value" id="statToday">—</div>
+        <div class="stat-icon">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Tampil Saat Ini</div>
+        <div class="stat-value" id="statShown">—</div>
+        <div class="stat-icon">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-title">Daftar Customer</div>
+        <div class="search-box">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="searchInput" placeholder="Cari nama atau email..." oninput="filterCustomers()"/>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Telepon</th>
+            <th>ID</th>
+            <th>Status</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="customerTableBody">
+          <tr><td colspan="5"><div class="empty-state"><div class="spinner" style="margin:0 auto;border-color:var(--cream-dark);border-top-color:var(--gold);width:28px;height:28px;"></div><p style="margin-top:14px;font-size:13px;">Memuat data...</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MODAL ══════════ -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <button class="btn-cancel" onclick="closeModal()">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="modal-title">Tambah Customer</div>
+    <div class="modal-sub">Lengkapi data tamu baru untuk Arca Hotel</div>
+    <form id="customerForm" onsubmit="submitCustomer(event)">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Nama Lengkap</label>
+          <input class="form-input" type="text" id="inputName" placeholder="John Doe" required/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nomor Telepon</label>
+          <input class="form-input" type="tel" id="inputPhone" placeholder="08xx-xxxx-xxxx" required/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="inputEmail" placeholder="john@example.com" required/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" id="inputPassword" placeholder="Minimal 6 karakter" required minlength="6"/>
+      </div>
+      <button class="btn-submit" type="submit" id="submitBtn">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Simpan Customer
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ══════════ TOAST ══════════ -->
+<div class="toast" id="toast">
+  <svg id="toastIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"></svg>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+  let allCustomers = []
+
+  // ── Toast ──────────────────────────────────
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast')
+    const icon = document.getElementById('toastIcon')
+    t.className = `toast ${type}`
+    document.getElementById('toastMsg').textContent = msg
+    icon.innerHTML = type === 'success'
+      ? '<polyline points="20 6 9 17 4 12"/>'
+      : '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>'
+    t.classList.add('show')
+    setTimeout(() => t.classList.remove('show'), 3000)
+  }
+
+  // ── Modal ──────────────────────────────────
+  function openModal() {
+    document.getElementById('modalOverlay').classList.add('open')
+    document.getElementById('inputName').focus()
+  }
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open')
+    document.getElementById('customerForm').reset()
+  }
+  function handleOverlayClick(e) {
+    if (e.target === document.getElementById('modalOverlay')) closeModal()
+  }
+
+  // ── Get avatar initials ────────────────────
+  function initials(name) {
+    return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()
+  }
+
+  // ── Render table ──────────────────────────
+  function renderTable(data) {
+    const tbody = document.getElementById('customerTableBody')
+    if (!data.length) {
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        <p>Belum ada data customer</p></div></td></tr>`
+      return
+    }
+    tbody.innerHTML = data.map(c => `
+      <tr>
+        <td>
+          <div class="customer-info">
+            <div class="avatar">${initials(c.name || '?')}</div>
+            <div>
+              <div class="customer-name">${c.name}</div>
+              <div class="customer-email">${c.email}</div>
+            </div>
+          </div>
+        </td>
+        <td style="color:var(--text-muted);font-size:13px;">${c.phone_number || '—'}</td>
+        <td style="color:var(--text-muted);font-size:12px;font-family:monospace;">#${c.id_customer}</td>
+        <td><span class="badge badge-active">● Aktif</span></td>
+        <td>
+          <button class="btn-delete" onclick="deleteCustomer(${c.id_customer}, this)">Hapus</button>
+        </td>
+      </tr>`).join('')
+  }
+
+  // ── Update stats ──────────────────────────
+  function updateStats(data) {
+    document.getElementById('statTotal').textContent = data.length
+    document.getElementById('statShown').textContent = data.length
+    // Today count (tidak bisa tanpa timestamp, tampilkan 0)
+    document.getElementById('statToday').textContent = '—'
+  }
+
+  // ── Filter ────────────────────────────────
+  function filterCustomers() {
+    const q = document.getElementById('searchInput').value.toLowerCase()
+    const filtered = allCustomers.filter(c =>
+      c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q)
+    )
+    document.getElementById('statShown').textContent = filtered.length
+    renderTable(filtered)
+  }
+
+  // ── Load customers ────────────────────────
+  function loadCustomers() {
+    fetch('/api/customers')
+      .then(res => res.json())
+      .then(data => {
+        allCustomers = data
+        renderTable(data)
+        updateStats(data)
+      })
+      .catch(() => {
+        showToast('Gagal memuat data customer', 'error')
+        document.getElementById('customerTableBody').innerHTML =
+          `<tr><td colspan="5"><div class="empty-state"><p>Gagal memuat data. Periksa koneksi server.</p></div></td></tr>`
+      })
+  }
+
+  // ── Submit form ───────────────────────────
+  function submitCustomer(e) {
+    e.preventDefault()
+    const btn = document.getElementById('submitBtn')
+    btn.disabled = true
+    btn.innerHTML = '<div class="spinner"></div> Menyimpan...'
+
+    fetch('/api/customers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name:         document.getElementById('inputName').value,
+        email:        document.getElementById('inputEmail').value,
+        password:     document.getElementById('inputPassword').value,
+        phone_number: document.getElementById('inputPhone').value
+      })
+    })
+    .then(res => {
+      if (!res.ok) return res.json().then(e => Promise.reject(e.error))
+      return res.json()
+    })
+    .then(() => {
+      closeModal()
+      loadCustomers()
+      showToast('Customer berhasil ditambahkan!')
+    })
+    .catch(err => showToast(err || 'Gagal menambahkan customer', 'error'))
+    .finally(() => {
+      btn.disabled = false
+      btn.innerHTML = '<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Simpan Customer'
+    })
+  }
+
+  // ── Delete ────────────────────────────────
+  function deleteCustomer(id, btn) {
+    if (!confirm('Hapus customer ini?')) return
+    btn.textContent = '...'
+    btn.disabled = true
+    fetch(`/api/customers/${id}`, { method: 'DELETE' })
+      .then(res => {
+        if (res.ok || res.status === 404) {
+          allCustomers = allCustomers.filter(c => c.id_customer !== id)
+          renderTable(allCustomers)
+          updateStats(allCustomers)
+          showToast('Customer berhasil dihapus!')
+        } else {
+          showToast('Gagal menghapus customer', 'error')
+          btn.textContent = 'Hapus'; btn.disabled = false
+        }
+      })
+      .catch(() => { showToast('Gagal menghapus customer', 'error'); btn.textContent = 'Hapus'; btn.disabled = false })
+  }
+
+  loadCustomers()
+</script>
+</body>
+</html>
