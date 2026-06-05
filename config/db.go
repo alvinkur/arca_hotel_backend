@@ -31,6 +31,7 @@ func ConnectDB() {
 	}
 
 	errMigrate := db.AutoMigrate(
+		&models.RoomType{},
 		&models.Room{},
 		&models.Customer{},
 		&models.Staff{},
@@ -38,6 +39,7 @@ func ConnectDB() {
 		&models.Booking{},
 		&models.Payment{},
 		&models.Chat{},
+		&models.ChatMessage{},
 		&models.Review{},
 		&models.RevenueReport{},
 	)

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"strconv"
 
 	"arca-hotel/config"
 	"arca-hotel/models"
@@ -41,4 +42,52 @@ func CreatePayment(c *gin.Context) {
 	config.DB.Model(&booking).Update("status_payment", "paid")
 
 	c.JSON(http.StatusCreated, payment)
+}
+
+func UpdatePayment(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID tidak valid"})
+		return
+	}
+
+	var existing models.Payment
+	if err := config.DB.First(&existing, uint(id)).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Payment tidak ditemukan"})
+		return
+	}
+
+	var input models.Payment
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if input.BookingID != 0 {
+		var booking models.Booking
+		if err := config.DB.First(&booking, input.BookingID).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Booking tidak ditemukan"})
+			return
+		}
+	}
+
+	config.DB.Model(&existing).Updates(&input)
+	c.JSON(http.StatusOK, existing)
+}
+
+func DeletePayment(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID tidak valid"})
+		return
+	}
+
+	var payment models.Payment
+	if err := config.DB.First(&payment, uint(id)).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Payment tidak ditemukan"})
+		return
+	}
+
+	config.DB.Delete(&payment)
+	c.JSON(http.StatusOK, gin.H{"message": "Payment berhasil dihapus"})
 }
