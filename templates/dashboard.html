@@ -1,132 +1,136 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard</title>
-
-<script src="https://cdn.tailwindcss.com"></script>
-
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Arca Hotel — Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/style.css"/>
 </head>
+<body>
 
-<body class="bg-gray-100">
+<aside id="sidebarContainer" class="sidebar"></aside>
 
-<!-- Navbar -->
-<nav class="bg-white shadow">
-<div class="max-w-6xl mx-auto px-6 py-4 flex justify-between">
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Dashboard</div>
+      <div class="topbar-sub">Selamat datang di sistem manajemen Hotel Arca</div>
+    </div>
+  </div>
 
-<h1 class="text-xl font-bold text-blue-600">
-Dashboard
-</h1>
+  <div class="content">
+    <h2 style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--navy);margin-bottom:4px;">
+      Selamat datang, <span id="welcomeName">...</span>
+    </h2>
+    <p style="font-size:13.5px;color:var(--text-muted);margin-bottom:28px;">
+      Pilih menu di bawah ini untuk mulai mengelola data.
+    </p>
 
-<a href="/"
-class="text-red-500 font-medium hover:underline">
-Logout
-</a>
+    <!-- Summary Stats -->
+    <div class="stats" id="statsContainer" style="margin-bottom:28px;">
+      <div class="stat-card">
+        <div class="stat-label">Total Customers</div>
+        <div class="stat-value" id="dashStatCustomers">—</div>
+        <div class="stat-icon"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Rooms</div>
+        <div class="stat-value" id="dashStatRooms">—</div>
+        <div class="stat-icon"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Bookings</div>
+        <div class="stat-value" id="dashStatBookings">—</div>
+        <div class="stat-icon"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
+      </div>
+    </div>
 
-</div>
-</nav>
+    <!-- Quick Link Cards -->
+    <h3 style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--navy);margin-bottom:16px;">Menu Manajemen</h3>
+    <div class="dash-grid" id="dashGrid"></div>
 
-<!-- Content -->
-<div class="max-w-6xl mx-auto mt-10 px-6">
-
-<h2 class="text-3xl font-bold mb-6">
-Welcome to your dashboard 🎉
-</h2>
-
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-<div class="bg-white p-6 rounded-xl shadow">
-<h3 class="text-lg font-semibold mb-2">Customer List</h3>
-<p class="text-gray-600 mb-4">
-View and manage your customer list.
-</p>
-<a href="/customer"
-class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-View
-</a>
-</div>
-
-<!-- Card 1 -->
-<div class="bg-white p-6 rounded-xl shadow">
-<h3 class="text-lg font-semibold mb-2">My Bookings</h3>
-<p class="text-gray-600 mb-4">
-View and manage your hotel bookings.
-</p>
-<a href="/mybooking"
-class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-View
-</a>
-</div>
-
-<!-- Card 2 -->
-<div class="bg-white p-6 rounded-xl shadow">
-<h3 class="text-lg font-semibold mb-2">Available Rooms</h3>
-<p class="text-gray-600 mb-4">
-Explore available hotel rooms.
-</p>
-<button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-Browse
-</button>
-</div>
-
-<!-- Card 3 -->
-<div class="bg-white p-6 rounded-xl shadow">
-<h3 class="text-lg font-semibold mb-2">Profile</h3>
-<p class="text-gray-600 mb-4">
-Update your account information.
-</p>
-<button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-Edit
-</button>
-</div>
-
-</div>
-<div class="mt-10 bg-white p-6 rounded-xl shadow">
-
-  <h3 class="text-xl font-bold mb-4">
-  AI Room Recommendation
-  </h3>
-  
-  <input
-  id="message"
-  class="border w-full p-2 rounded mb-2"
-  placeholder="Describe what kind of room you want">
-  
-  <button
-  onclick="sendMessage()"
-  class="bg-blue-500 text-white px-4 py-2 rounded">
-  Ask AI
-  </button>
-  
-  <p id="reply" class="mt-4 text-gray-700"></p>
-  
+    <!-- AI Recommendation Widget -->
+    <div class="ai-widget">
+      <h3 style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--navy);margin-bottom:8px;">
+        AI Room Recommendation
+      </h3>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
+        Ceritakan preferensi kamar yang Anda inginkan, AI akan memberikan rekomendasi.
+      </p>
+      <div style="display:flex;gap:10px;">
+        <input id="aiMessage" class="form-input" style="flex:1;" placeholder="Contoh: Saya cari kamar murah untuk keluarga dengan kolam renang..."/>
+        <button class="btn-add" onclick="askAI()" style="white-space:nowrap;">Tanya AI</button>
+      </div>
+      <p id="aiReply" style="margin-top:14px;font-size:14px;color:var(--navy);line-height:1.5;"></p>
+    </div>
   </div>
 </div>
 
+<!-- Toast -->
+<div class="toast" id="toast">
+  <svg id="toastIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"></svg>
+  <span id="toastMsg"></span>
+</div>
+
+<script src="/static/app.js"></script>
+<script>
+  if (!App.requireAuth()) throw new Error('Not authenticated');
+
+  var user = App.getUser();
+  App.renderSidebar('dashboard');
+  document.getElementById('welcomeName').textContent = user ? user.name : '...';
+
+  // Quick link cards
+  var links = [
+    { page: 'customer', label: 'Customers', desc: 'Kelola data tamu hotel.', icon: '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>' },
+    { page: 'owner', label: 'Owners', desc: 'Kelola data pemilik hotel.', icon: '<path d="M20 21v-2a4 4 0 00-4-4h-4a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>' },
+    { page: 'staff', label: 'Staffs', desc: 'Kelola data karyawan hotel.', icon: '<path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/>' },
+    { page: 'room', label: 'Rooms', desc: 'Kelola nomor kamar hotel.', icon: '<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>' },
+    { page: 'room-type', label: 'Room Types', desc: 'Kelola tipe dan harga kamar.', icon: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>' },
+    { page: 'booking', label: 'Bookings', desc: 'Kelola data pemesanan kamar.', icon: '<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>' },
+    { page: 'payment', label: 'Payments', desc: 'Kelola data pembayaran.', icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>' },
+    { page: 'review', label: 'Reviews', desc: 'Kelola ulasan tamu hotel.', icon: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>' },
+    { page: 'chat', label: 'Chats', desc: 'Lihat percakapan customer-staff.', icon: '<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>' },
+    { page: 'revenue-report', label: 'Revenue', desc: 'Lihat laporan pendapatan hotel.', icon: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>' },
+  ];
+
+  document.getElementById('dashGrid').innerHTML = links.map(function(l) {
+    return '<a href="/' + l.page + '" class="dash-card">' +
+      '<div class="dash-card-icon"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">' + l.icon + '</svg></div>' +
+      '<h3>' + l.label + '</h3>' +
+      '<p>' + l.desc + '</p>' +
+      '</a>';
+  }).join('');
+
+  // Load summary stats
+  function safeCount(resource, elId) {
+    App.list(resource)
+      .then(function(d) { document.getElementById(elId).textContent = d.length; })
+      .catch(function() { document.getElementById(elId).textContent = '—'; });
+  }
+
+  safeCount('customers', 'dashStatCustomers');
+  safeCount('rooms', 'dashStatRooms');
+  safeCount('bookings', 'dashStatBookings');
+
+  // AI recommendation
+  async function askAI() {
+    var input = document.getElementById('aiMessage');
+    var reply = document.getElementById('aiReply');
+    var msg = input.value.trim();
+    if (!msg) return;
+
+    reply.innerHTML = '<div class="spinner-dark"></div>';
+    try {
+      var answer = await App.askAI(msg);
+      reply.textContent = answer;
+    } catch (err) {
+      reply.textContent = 'Maaf, gagal mendapatkan rekomendasi. Coba lagi nanti.';
+    }
+    input.value = '';
+  }
+</script>
 </body>
 </html>
-
-<script>
-
-  async function sendMessage(){
-  
-  const message = document.getElementById("message").value
-  
-  const response = await fetch("/ai-recommend",{
-  method:"POST",
-  headers:{
-  "Content-Type":"application/json"
-  },
-  body: JSON.stringify({
-  message: message
-  })
-  })
-  
-  const data = await response.json()
-  
-  document.getElementById("reply").innerText = data.reply
-  
-  }
-  
-  </script>

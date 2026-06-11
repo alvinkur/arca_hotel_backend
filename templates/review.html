@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Arca Hotel — Review</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+
+<aside id="sidebarContainer" class="sidebar"></aside>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Review Management</div>
+      <div class="topbar-sub">Kelola ulasan tamu hotel Arca</div>
+    </div>
+    <button class="btn-add" onclick="openCreateModal()">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Tambah Review
+    </button>
+  </div>
+
+  <div class="content">
+    <div class="stats" id="statsContainer"></div>
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-title">Daftar Review</div>
+        <div class="search-box">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="searchInput" placeholder="Cari komentar..." oninput="filterTable()"/>
+        </div>
+      </div>
+      <table>
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody">
+          <tr><td><div class="empty-state"><div class="spinner-dark"></div><p>Memuat data...</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<div class="toast" id="toast">
+  <svg id="toastIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"></svg>
+  <span id="toastMsg"></span>
+</div>
+
+<script src="/static/app.js"></script>
+<script>
+  function starRating(n) {
+    var s = '';
+    for (var i = 1; i <= 5; i++) {
+      s += i <= n ? '&#9733;' : '&#9734;';
+    }
+    return '<span style="color:var(--gold);font-size:15px;">' + s + '</span>';
+  }
+
+  var ENTITY = {
+    name: 'reviews',
+    displayName: 'Review',
+    idField: 'id_review',
+    fields: [
+      { label: 'Customer', key: 'id_customer', type: 'select', resource: 'customers', labelField: 'name', valueField: 'id_customer', required: true },
+      { label: 'Room', key: 'id_room', type: 'select', resource: 'rooms', labelField: 'room_number', valueField: 'id_room', required: true },
+      { label: 'Rating (1-5)', key: 'rating', type: 'number', required: true, min: '1', max: '5' },
+      { label: 'Komentar', key: 'comment', type: 'textarea' },
+    ],
+    columns: [
+      {
+        label: 'Customer', key: 'id_customer',
+        render: function(r) { return '<span style="font-family:monospace;font-size:12px;color:var(--text-muted);">Customer #' + r.id_customer + '</span>'; }
+      },
+      {
+        label: 'Room', key: 'id_room',
+        render: function(r) { return '<span style="font-family:monospace;font-size:12px;color:var(--text-muted);">Room #' + r.id_room + '</span>'; }
+      },
+      { label: 'Rating', key: 'rating', render: function(r) { return starRating(r.rating); } },
+      { label: 'Komentar', key: 'comment', render: function(r) { return '<span style="font-size:13px;">' + (r.comment || '—') + '</span>'; } },
+    ],
+    stats: [
+      { id: 'total', label: 'Total Review', icon: 'star', compute: function(all) { return all.length; } },
+      { id: 'avg', label: 'Rata-rata Rating', icon: 'star', compute: function(all) {
+        if (!all.length) return '—';
+        var avg = all.reduce(function(s, r) { return s + r.rating; }, 0) / all.length;
+        return avg.toFixed(1) + ' / 5';
+      }},
+      { id: 'shown', label: 'Tampil Saat Ini', icon: 'eye', compute: function(all, filt) { return filt.length; } },
+    ],
+    onEdit: true,
+    onDelete: true,
+  };
+
+  App.initPage(ENTITY);
+</script>
+</body>
+</html>

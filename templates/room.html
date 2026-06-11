@@ -1,178 +1,104 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arca Hotel - Room Management</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-    </style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Arca Hotel — Room</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/style.css"/>
 </head>
-<body class="bg-gray-100 flex h-screen overflow-hidden">
+<body>
 
-    <aside class="w-64 bg-white shadow-xl flex flex-col">
-        <div class="p-6 border-b border-gray-100">
-            <h2 class="text-2xl font-bold text-blue-600 tracking-tight">Arca Hotel</h2>
+<aside id="sidebarContainer" class="sidebar"></aside>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Room Management</div>
+      <div class="topbar-sub">Kelola nomor dan ketersediaan kamar hotel Arca</div>
+    </div>
+    <button class="btn-add" onclick="openCreateModal()">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Tambah Room
+    </button>
+  </div>
+
+  <div class="content">
+    <div class="stats" id="statsContainer"></div>
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-title">Daftar Room</div>
+        <div class="search-box">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="searchInput" placeholder="Cari nomor kamar..." oninput="filterTable()"/>
         </div>
-        <nav class="flex-1 p-4 space-y-2">
-            <a href="/" class="block p-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors">Dashboard</a>
-            <a href="/owner" class="block p-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors">Owner</a>
-            <a href="/customer" class="block p-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors">Customer</a>
-            <a href="/room" class="block p-3 bg-blue-50 text-blue-600 font-medium rounded-lg">Room</a>
-            <a href="#" class="block p-3 text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors">Booking</a>
-        </nav>
-    </aside>
+      </div>
+      <table>
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody">
+          <tr><td><div class="empty-state"><div class="spinner-dark"></div><p>Memuat data...</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
-    <main class="flex-1 overflow-y-auto p-8">
-        <header class="mb-8 flex justify-between items-center">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-800">Room Management</h1>
-                <p class="text-gray-500 mt-1">Kelola nomor kamar dan tipe kamar hotel.</p>
-            </div>
-        </header>
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modalContent"></div>
+</div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-1">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <h2 class="text-xl font-semibold mb-5 text-gray-800">Tambah Kamar</h2>
+<div class="toast" id="toast">
+  <svg id="toastIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"></svg>
+  <span id="toastMsg"></span>
+</div>
 
-                    <form id="roomForm" class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Nomor Kamar</label>
-                            <input type="text" id="roomNumber" placeholder="Contoh: 101, 202, 303..." required
-                                class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Tipe Kamar</label>
-                            <select id="roomTypeId" required
-                                class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                                <option value="">-- Pilih Tipe --</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Ketersediaan</label>
-                            <select id="availability" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                                <option value="true">Tersedia</option>
-                                <option value="false">Penuh / Maintenance</option>
-                            </select>
-                        </div>
-
-                        <button type="submit" class="w-full bg-blue-600 text-white font-medium p-3 rounded-xl hover:bg-blue-700 transition-colors mt-2">
-                            Simpan Data
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <div class="lg:col-span-2">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <h2 class="text-xl font-semibold mb-5 text-gray-800">Daftar Kamar</h2>
-                    <div id="roomList" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <script>
-        const API_ROOMS = '/api/rooms';
-        const API_ROOM_TYPES = '/api/room-types';
-
-        const formatRupiah = (angka) => {
-            return new Intl.NumberFormat('id-ID', {
-                style: 'currency',
-                currency: 'IDR',
-                minimumFractionDigits: 0
-            }).format(angka);
+<script src="/static/app.js"></script>
+<script>
+  var ENTITY = {
+    name: 'rooms',
+    displayName: 'Room',
+    idField: 'id_room',
+    fields: [
+      { label: 'Nomor Kamar', key: 'room_number', type: 'text', required: true },
+      { label: 'Tipe Kamar', key: 'id_room_type', type: 'select', resource: 'room-types', labelField: 'name', valueField: 'id_room_type', required: true },
+      { label: 'Ketersediaan', key: 'availability', type: 'toggle', toggleLabel: 'Tersedia' },
+    ],
+    columns: [
+      {
+        label: 'Kamar', key: 'room_number',
+        render: function(r) {
+          var rt = r.room_type;
+          return '<div><div class="customer-name">#' + r.room_number + '</div><div style="font-size:12px;color:var(--text-muted);">' + (rt ? rt.name : '—') + '</div></div>';
         }
-
-        function loadRoomTypes() {
-            fetch(API_ROOM_TYPES)
-                .then(res => res.json())
-                .then(types => {
-                    const select = document.getElementById('roomTypeId');
-                    types.forEach(t => {
-                        const opt = document.createElement('option');
-                        opt.value = t.id_room_type;
-                        opt.textContent = `${t.name} (${formatRupiah(t.price)}/malam)`;
-                        select.appendChild(opt);
-                    });
-                })
-                .catch(err => console.error("Gagal memuat room types:", err));
+      },
+      {
+        label: 'Tipe', key: 'id_room_type',
+        render: function(r) { return r.room_type ? r.room_type.name : '—'; }
+      },
+      {
+        label: 'Harga', key: 'room_type',
+        render: function(r) { return r.room_type ? App.formatRupiah(r.room_type.price) + '<span style="font-size:11px;color:var(--text-muted);">/malam</span>' : '—'; }
+      },
+      {
+        label: 'Status', key: 'availability',
+        render: function(r) {
+          return r.availability
+            ? '<span class="badge badge-active">&#9679; Tersedia</span>'
+            : '<span class="badge badge-unavailable">&#9679; Penuh</span>';
         }
+      },
+    ],
+    stats: [
+      { id: 'total', label: 'Total Room', icon: 'total', compute: function(all) { return all.length; } },
+      { id: 'available', label: 'Tersedia', icon: 'eye', compute: function(all) { return all.filter(function(r) { return r.availability; }).length; } },
+      { id: 'shown', label: 'Tampil Saat Ini', icon: 'eye', compute: function(all, filt) { return filt.length; } },
+    ],
+    onEdit: true,
+    onDelete: true,
+  };
 
-        function loadRooms() {
-            fetch(API_ROOMS)
-                .then(res => res.json())
-                .then(data => {
-                    let container = document.getElementById('roomList');
-                    container.innerHTML = "";
-
-                    if (data.length === 0) {
-                        container.innerHTML = `<p class="text-gray-500 col-span-2 text-center py-8">Belum ada data kamar.</p>`;
-                        return;
-                    }
-
-                    data.forEach(room => {
-                        const rt = room.room_type;
-                        let statusBadge = room.availability
-                            ? `<span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-medium">Tersedia</span>`
-                            : `<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-medium">Penuh</span>`;
-
-                        let card = document.createElement('div');
-                        card.className = "p-5 border border-gray-100 rounded-xl hover:shadow-md transition-shadow relative overflow-hidden";
-
-                        card.innerHTML = `
-                            <div class="flex justify-between items-start mb-2">
-                                <div>
-                                    <p class="text-sm text-gray-500 mb-1">Kamar No. ${room.room_number}</p>
-                                    <h3 class="font-bold text-lg text-gray-800">${rt ? rt.name : '—'}</h3>
-                                </div>
-                                ${statusBadge}
-                            </div>
-                            <div class="mt-4 pt-4 border-t border-gray-50">
-                                <p class="text-blue-600 font-bold">${rt ? formatRupiah(rt.price) : '—'} <span class="text-sm text-gray-400 font-normal">/ malam</span></p>
-                            </div>
-                        `;
-                        container.appendChild(card);
-                    });
-                })
-                .catch(err => console.error("Gagal mengambil data:", err));
-        }
-
-        document.getElementById('roomForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const payload = {
-                room_number: document.getElementById('roomNumber').value,
-                id_room_type: parseInt(document.getElementById('roomTypeId').value),
-                availability: document.getElementById('availability').value === 'true'
-            };
-
-            fetch(API_ROOMS, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
-                .then(res => {
-                    if (!res.ok) return res.json().then(e => Promise.reject(e.error));
-                    return res.json();
-                })
-                .then(() => {
-                    document.getElementById('roomForm').reset();
-                    document.getElementById('roomTypeId').value = '';
-                    loadRooms();
-                })
-                .catch(err => alert(err));
-        });
-
-        loadRoomTypes();
-        loadRooms();
-    </script>
-
+  App.initPage(ENTITY);
+</script>
 </body>
 </html>

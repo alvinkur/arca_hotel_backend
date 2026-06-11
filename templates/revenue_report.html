@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Arca Hotel — Revenue Report</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+
+<aside id="sidebarContainer" class="sidebar"></aside>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Revenue Report</div>
+      <div class="topbar-sub">Laporan pendapatan Hotel Arca</div>
+    </div>
+    <button class="btn-add" onclick="openCreateModal()">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Tambah Report
+    </button>
+  </div>
+
+  <div class="content">
+    <div class="stats" id="statsContainer"></div>
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-title">Daftar Revenue Report</div>
+        <div class="search-box">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="searchInput" placeholder="Cari periode..." oninput="filterTable()"/>
+        </div>
+      </div>
+      <table>
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody">
+          <tr><td><div class="empty-state"><div class="spinner-dark"></div><p>Memuat data...</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<div class="toast" id="toast">
+  <svg id="toastIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"></svg>
+  <span id="toastMsg"></span>
+</div>
+
+<script src="/static/app.js"></script>
+<script>
+  var ENTITY = {
+    name: 'revenue_reports',
+    displayName: 'Revenue Report',
+    idField: 'id_revenue',
+    fields: [
+      { label: 'Periode', key: 'period', type: 'text', required: true, placeholder: 'Contoh: 2026-06' },
+      { label: 'Total Revenue', key: 'total_revenue', type: 'number', required: true, min: '0' },
+      { label: 'Total Booking', key: 'total_booking', type: 'number', required: true, min: '0' },
+      { label: 'Total Review', key: 'total_review', type: 'number', required: true, min: '0' },
+      { label: 'Detail Income', key: 'detail_income', type: 'textarea', placeholder: 'Contoh: Transfer: 10jt, Cash: 5jt' },
+    ],
+    columns: [
+      { label: 'Periode', key: 'period', render: function(r) { return '<span class="customer-name">' + r.period + '</span>'; } },
+      { label: 'Revenue', key: 'total_revenue', render: function(r) { return App.formatRupiah(r.total_revenue); } },
+      { label: 'Booking', key: 'total_booking' },
+      { label: 'Review', key: 'total_review' },
+      { label: 'Detail', key: 'detail_income', render: function(r) { return '<span style="font-size:12.5px;color:var(--text-muted);max-width:200px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (r.detail_income || '—') + '</span>'; } },
+    ],
+    stats: [
+      { id: 'total', label: 'Total Report', icon: 'total', compute: function(all) { return all.length; } },
+      { id: 'revenue', label: 'Total Revenue', icon: 'revenue', compute: function(all) { return App.formatRupiah(all.reduce(function(s, r) { return s + (r.total_revenue || 0); }, 0)); } },
+      { id: 'shown', label: 'Tampil Saat Ini', icon: 'eye', compute: function(all, filt) { return filt.length; } },
+    ],
+    onEdit: true,
+    onDelete: true,
+  };
+
+  App.initPage(ENTITY);
+</script>
+</body>
+</html>

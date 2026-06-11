@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Arca Hotel — Chat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+
+<aside id="sidebarContainer" class="sidebar"></aside>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Chat Management</div>
+      <div class="topbar-sub">Kelola percakapan customer dan staff hotel Arca</div>
+    </div>
+    <button class="btn-add" onclick="openCreateChat()">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Buat Chat Baru
+    </button>
+  </div>
+
+  <div class="content">
+    <div class="stats" id="statsContainer"></div>
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-title">Daftar Chat</div>
+        <div class="search-box">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="searchInput" placeholder="Cari..." oninput="filterChats()"/>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Chat ID</th>
+            <th>Customer</th>
+            <th>Staff</th>
+            <th>Tanggal</th>
+            <th>Pesan</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="chatTableBody">
+          <tr><td colspan="6"><div class="empty-state"><div class="spinner-dark"></div><p>Memuat data...</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Create Chat Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <svg id="toastIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"></svg>
+  <span id="toastMsg"></span>
+</div>
+
+<script src="/static/app.js"></script>
+<script>
+  if (!App.requireAuth()) throw new Error('Not authenticated');
+
+  App.user = App.getUser();
+  App.renderSidebar('chat');
+
+  var allChats = [];
+  var openedChatId = null;
+
+  // ── Load Chats ────────────────────────────
+
+  function loadChats() {
+    App.list('chats')
+      .then(function(data) {
+        allChats = data;
+        renderChatTable(data);
+        updateStats(data);
+      })
+      .catch(function(err) {
+        App.showToast(err.message, 'error');
+        document.getElementById('chatTableBody').innerHTML =
+          '<tr><td colspan="6"><div class="empty-state"><p>Gagal memuat data.</p></div></td></tr>';
+      });
+  }
+
+  function updateStats(data) {
+    document.getElementById('statsContainer').innerHTML =
+      '<div class="stat-card"><div class="stat-label">Total Chat</div><div class="stat-value">' + data.length + '</div><div class="stat-icon"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div></div>' +
+      '<div class="stat-card"><div class="stat-label">Pesan Terkirim</div><div class="stat-value" id="statMessages">—</div><div class="stat-icon"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div></div>' +
+      '<div class="stat-card"><div class="stat-label">Tampil Saat Ini</div><div class="stat-value" id="statShown">' + data.length + '</div><div class="stat-icon"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div></div>';
+
+    // Count total messages across all chats (async)
+    var count = 0;
+    var done = 0;
+    if (!data.length) { document.getElementById('statMessages').textContent = '0'; return; }
+    data.forEach(function(c) {
+      App.list('chats/' + c.id_chat + '/messages')
+        .then(function(msgs) { count += msgs.length; done++; if (done === data.length) document.getElementById('statMessages').textContent = count; })
+        .catch(function() { done++; if (done === data.length) document.getElementById('statMessages').textContent = count || '—'; });
+    });
+  }
+
+  // ── Render Chat Table ─────────────────────
+
+  function renderChatTable(data) {
+    var tbody = document.getElementById('chatTableBody');
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><p>Belum ada data chat</p></div></td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.map(function(c) {
+      var row = '<tr id="chatRow_' + c.id_chat + '">';
+      row += '<td style="font-family:monospace;font-size:12px;color:var(--text-muted);">#' + c.id_chat + '</td>';
+      row += '<td style="font-family:monospace;font-size:12px;">Customer #' + c.id_customer + '</td>';
+      row += '<td style="font-family:monospace;font-size:12px;">Staff #' + c.id_staff + '</td>';
+      row += '<td style="font-size:13px;">' + App.formatDateTime(c.date) + '</td>';
+      row += '<td><span class="badge badge-active" style="cursor:pointer;" onclick="toggleMessages(' + c.id_chat + ')">Lihat Pesan</span></td>';
+      row += '<td>';
+      row += '<button class="btn-edit" onclick="editChat(' + c.id_chat + ')">Edit</button>';
+      row += '<button class="btn-delete" onclick="deleteChat(' + c.id_chat + ')">Hapus</button>';
+      row += '</td>';
+      row += '</tr>';
+      row += '<tr id="msgPanel_' + c.id_chat + '" style="display:none;"><td colspan="6" style="padding:0;"></td></tr>';
+      return row;
+    }).join('');
+  }
+
+  function filterChats() {
+    var q = (document.getElementById('searchInput').value || '').toLowerCase();
+    var filtered = allChats.filter(function(c) {
+      return String(c.id_customer).indexOf(q) !== -1 || String(c.id_staff).indexOf(q) !== -1 || String(c.id_chat).indexOf(q) !== -1;
+    });
+    document.getElementById('statShown').textContent = filtered.length;
+    renderChatTable(filtered);
+  }
+
+  // ── Toggle Messages Panel ─────────────────
+
+  function toggleMessages(chatId) {
+    var panel = document.getElementById('msgPanel_' + chatId);
+
+    if (openedChatId === chatId) {
+      panel.style.display = 'none';
+      openedChatId = null;
+      return;
+    }
+
+    // Close previous
+    if (openedChatId) {
+      var prev = document.getElementById('msgPanel_' + openedChatId);
+      if (prev) prev.style.display = 'none';
+    }
+
+    openedChatId = chatId;
+    panel.style.display = '';
+    panel.innerHTML = '<td colspan="6"><div class="chat-panel"><div class="spinner-dark"></div><p style="text-align:center;font-size:13px;color:var(--text-muted);margin-top:8px;">Memuat pesan...</p></div></td>';
+
+    loadMessages(chatId);
+  }
+
+  function loadMessages(chatId) {
+    App.list('chats/' + chatId + '/messages')
+      .then(function(messages) {
+        renderMessages(chatId, messages);
+      })
+      .catch(function() {
+        document.getElementById('msgPanel_' + chatId).innerHTML =
+          '<td colspan="6"><div class="chat-panel"><p style="text-align:center;font-size:13px;color:var(--red);">Gagal memuat pesan</p></div></td>';
+      });
+  }
+
+  function renderMessages(chatId, messages) {
+    var panel = document.getElementById('msgPanel_' + chatId);
+    var html = '<td colspan="6"><div class="chat-panel">';
+
+    // Messages
+    html += '<div class="chat-messages" id="msgList_' + chatId + '">';
+    if (!messages.length) {
+      html += '<p style="text-align:center;font-size:13px;color:var(--text-muted);padding:20px;">Belum ada pesan.</p>';
+    } else {
+      messages.forEach(function(m) {
+        html += renderBubble(m, chatId);
+      });
+    }
+    html += '</div>';
+
+    // Send form
+    html += '<form onsubmit="return false" class="chat-input-row">';
+    html += '<select class="form-select" id="senderType_' + chatId + '"><option value="customer">Customer</option><option value="staff">Staff</option></select>';
+    html += '<input class="form-input" id="msgInput_' + chatId + '" placeholder="Ketik pesan..." required/>';
+    html += '<button class="chat-send-btn" onclick="sendMessage(' + chatId + ')">Kirim</button>';
+    html += '</form>';
+
+    html += '</div></td>';
+    panel.innerHTML = html;
+  }
+
+  function renderBubble(m, chatId) {
+    var side = m.sender_type || 'customer';
+    return '<div class="chat-bubble ' + side + '" id="bubble_' + m.id_chat_message + '">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+      '<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">' + side + '</span>' +
+      '<div style="display:flex;gap:6px;">' +
+      '<button style="background:none;border:none;cursor:pointer;font-size:11px;opacity:.6;color:inherit;" onclick="editMessage(' + m.id_chat_message + ', ' + chatId + ', \'' + App._escAttr(m.message) + '\', \'' + side + '\')">Edit</button>' +
+      '<button style="background:none;border:none;cursor:pointer;font-size:11px;opacity:.6;color:inherit;" onclick="deleteMessage(' + m.id_chat_message + ', ' + chatId + ')">Hapus</button>' +
+      '</div></div>' +
+      '<div style="margin-top:4px;">' + App._escHtml(m.message) + '</div>' +
+      '<div class="chat-bubble-time">' + App.formatDateTime(m.date) + '</div>' +
+      '</div>';
+  }
+
+  // ── Message CRUD ──────────────────────────
+
+  function sendMessage(chatId) {
+    var input = document.getElementById('msgInput_' + chatId);
+    var senderType = document.getElementById('senderType_' + chatId);
+    var msg = input.value.trim();
+    if (!msg) return;
+
+    App.create('chats/' + chatId + '/messages', {
+      sender_type: senderType.value,
+      message: msg
+    })
+    .then(function() {
+      input.value = '';
+      loadMessages(chatId);
+      updateStats(allChats);
+    })
+    .catch(function(err) { App.showToast(err.message, 'error'); });
+  }
+
+  function editMessage(msgId, chatId, currentMsg, currentSender) {
+    var newMsg = prompt('Edit pesan:', currentMsg);
+    if (newMsg === null || newMsg.trim() === '') return;
+
+    App.update('chats/' + chatId + '/messages', msgId, {
+      message: newMsg.trim(),
+      sender_type: currentSender,
+      id_chat: chatId,
+      id_chat_message: msgId
+    })
+    .then(function() { loadMessages(chatId); App.showToast('Pesan berhasil diperbarui!'); })
+    .catch(function(err) { App.showToast(err.message, 'error'); });
+  }
+
+  function deleteMessage(msgId, chatId) {
+    if (!confirm('Hapus pesan ini?')) return;
+    App.del('chats/' + chatId + '/messages', msgId)
+      .then(function() { loadMessages(chatId); App.showToast('Pesan berhasil dihapus!'); })
+      .catch(function(err) { App.showToast(err.message, 'error'); });
+  }
+
+  // ── Chat CRUD ─────────────────────────────
+
+  function openCreateChat() {
+    var html = '<button class="btn-cancel" onclick="App.closeModal()">' +
+      '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
+      '<div class="modal-title">Buat Chat Baru</div>' +
+      '<div class="modal-sub">Pilih customer dan staff untuk memulai percakapan</div>' +
+      '<form onsubmit="return false">' +
+      '<div class="form-group"><label class="form-label">Customer</label><select class="form-select" id="chatCustId"><option value="">-- Pilih --</option></select></div>' +
+      '<div class="form-group"><label class="form-label">Staff</label><select class="form-select" id="chatStaffId"><option value="">-- Pilih --</option></select></div>' +
+      '<button class="btn-submit" onclick="createChat()">Buat Chat</button>' +
+      '</form>';
+
+    document.getElementById('modalContent').innerHTML = html;
+    document.getElementById('modalOverlay').classList.add('open');
+
+    App.populateSelect('chatCustId', 'customers', 'name', 'id_customer', 'Pilih Customer');
+    App.populateSelect('chatStaffId', 'staffs', 'name', 'id_staff', 'Pilih Staff');
+  }
+
+  function createChat() {
+    var custId = document.getElementById('chatCustId').value;
+    var staffId = document.getElementById('chatStaffId').value;
+    if (!custId || !staffId) { App.showToast('Pilih customer dan staff', 'error'); return; }
+
+    App.create('chats', {
+      id_customer: parseInt(custId),
+      id_staff: parseInt(staffId)
+    })
+    .then(function() {
+      App.closeModal();
+      App.showToast('Chat berhasil dibuat!');
+      loadChats();
+    })
+    .catch(function(err) { App.showToast(err.message, 'error'); });
+  }
+
+  function editChat(chatId) {
+    var chat = allChats.find(function(c) { return c.id_chat === chatId; });
+    if (!chat) return;
+
+    var html = '<button class="btn-cancel" onclick="App.closeModal()">' +
+      '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
+      '<div class="modal-title">Edit Chat #' + chatId + '</div>' +
+      '<div class="modal-sub">Perbarui customer atau staff</div>' +
+      '<form onsubmit="return false">' +
+      '<div class="form-group"><label class="form-label">Customer</label><select class="form-select" id="chatCustId"><option value="">-- Pilih --</option></select></div>' +
+      '<div class="form-group"><label class="form-label">Staff</label><select class="form-select" id="chatStaffId"><option value="">-- Pilih --</option></select></div>' +
+      '<button class="btn-submit" onclick="submitEditChat(' + chatId + ')">Simpan</button>' +
+      '</form>';
+
+    document.getElementById('modalContent').innerHTML = html;
+    document.getElementById('modalOverlay').classList.add('open');
+
+    App.populateSelect('chatCustId', 'customers', 'name', 'id_customer', 'Pilih Customer');
+    App.populateSelect('chatStaffId', 'staffs', 'name', 'id_staff', 'Pilih Staff');
+
+    // Pre-select current values after loading
+    setTimeout(function() {
+      var custEl = document.getElementById('chatCustId');
+      var staffEl = document.getElementById('chatStaffId');
+      if (custEl) custEl.value = chat.id_customer;
+      if (staffEl) staffEl.value = chat.id_staff;
+    }, 300);
+  }
+
+  function submitEditChat(chatId) {
+    var custId = document.getElementById('chatCustId').value;
+    var staffId = document.getElementById('chatStaffId').value;
+    if (!custId || !staffId) { App.showToast('Pilih customer dan staff', 'error'); return; }
+
+    App.update('chats', chatId, { id_customer: parseInt(custId), id_staff: parseInt(staffId) })
+      .then(function() {
+        App.closeModal();
+        App.showToast('Chat berhasil diperbarui!');
+        loadChats();
+      })
+      .catch(function(err) { App.showToast(err.message, 'error'); });
+  }
+
+  function deleteChat(chatId) {
+    if (!confirm('Hapus chat #' + chatId + ' dan semua pesannya?')) return;
+    App.del('chats', chatId)
+      .then(function() {
+        App.showToast('Chat berhasil dihapus!');
+        if (openedChatId === chatId) openedChatId = null;
+        loadChats();
+      })
+      .catch(function(err) { App.showToast(err.message, 'error'); });
+  }
+
+  // Override handleOverlayClick for the custom chat modal
+  window.handleOverlayClick = function(e) {
+    if (e.target === document.getElementById('modalOverlay')) App.closeModal();
+  };
+
+  loadChats();
+</script>
+</body>
+</html>
