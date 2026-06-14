@@ -1,10 +1,7 @@
 package controllers
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -14,31 +11,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type aiChatRequest struct {
-	Model    string      `json:"model"`
-	Messages []aiMessage `json:"messages"`
-}
-
-type aiMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-type aiChatResponse struct {
-	Choices []struct {
-		Message struct {
-			Content string `json:"content"`
-		} `json:"message"`
-	} `json:"choices"`
-}
-
 type recommendRequest struct {
 	Message string `json:"message" binding:"required"`
 }
 
 var roomClient *clients.RoomClient
+var mlClient *clients.MLClient
 
-func initClient() {
+func initClients() {
 	if roomClient == nil {
 		base := os.Getenv("ROOM_SERVICE_URL")
 		if base == "" {
@@ -46,10 +26,24 @@ func initClient() {
 		}
 		roomClient = clients.NewRoomClient(base)
 	}
+	if mlClient == nil {
+		base := os.Getenv("ML_SERVICE_URL")
+		if base == "" {
+			base = "http://localhost:8010"
+		}
+		mlClient = clients.NewMLClient(base)
+	}
+}
+
+func formatRoomNumbers(nums []string) string {
+	if len(nums) == 0 {
+		return ""
+	}
+	return " — Room " + strings.Join(nums, ", ")
 }
 
 func RecommendRoom(c *gin.Context) {
-	initClient()
+	initClients()
 
 	var req recommendRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -63,79 +57,18 @@ func RecommendRoom(c *gin.Context) {
 		return
 	}
 
-	apiKey := os.Getenv("AI_API_KEY")
-	if apiKey != "" {
-		reply, err := callAI(apiKey, roomTypes, req.Message)
-		if err == nil {
-			c.JSON(http.StatusOK, gin.H{"reply": reply})
-			return
-		}
+	result, err := mlClient.Recommend(req.Message)
+	if err == nil {
+		rooms := formatRoomNumbers(result.RoomNumbers)
+		reply := fmt.Sprintf("Berdasarkan preferensi Anda, kami merekomendasikan tipe **%s**%s dengan harga Rp%.0f/malam. %s",
+			result.Name, rooms, result.Price, result.Description)
+		c.JSON(http.StatusOK, gin.H{"reply": reply})
+		return
 	}
 
-	reply := keywordMatch(roomTypes, req.Message)
+	rooms, _ := roomClient.GetRooms()
+	reply := keywordMatch(roomTypes, rooms, req.Message)
 	c.JSON(http.StatusOK, gin.H{"reply": reply})
-}
-
-func callAI(apiKey string, roomTypes []clients.RoomTypeDTO, userMessage string) (string, error) {
-	baseURL := os.Getenv("AI_BASE_URL")
-	if baseURL == "" {
-		baseURL = "https://api.openai.com/v1"
-	}
-	model := os.Getenv("AI_MODEL")
-	if model == "" {
-		model = "gpt-4o-mini"
-	}
-
-	var sb strings.Builder
-	for _, rt := range roomTypes {
-		fmt.Fprintf(&sb, "- %s: Rp%.0f/malam. %s\n", rt.Name, rt.Price, rt.Description)
-	}
-
-	systemPrompt := fmt.Sprintf(
-		"Kamu adalah asisten Hotel Arca yang membantu tamu memilih kamar. "+
-			"Berikut daftar tipe kamar yang tersedia:\n\n%s\n"+
-			"Bantu tamu memilih kamar berdasarkan preferensi mereka. "+
-			"Berikan rekomendasi singkat (2-3 kalimat) dalam Bahasa Indonesia, sebutkan nama kamar dan harganya.",
-		sb.String(),
-	)
-
-	body := aiChatRequest{
-		Model: model,
-		Messages: []aiMessage{
-			{Role: "system", Content: systemPrompt},
-			{Role: "user", Content: userMessage},
-		},
-	}
-
-	jsonBody, _ := json.Marshal(body)
-	httpReq, _ := http.NewRequest("POST",
-		strings.TrimRight(baseURL, "/")+"/chat/completions",
-		bytes.NewReader(jsonBody),
-	)
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Bearer "+apiKey)
-
-	client := &http.Client{}
-	resp, err := client.Do(httpReq)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	respBytes, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("ai api returned %d", resp.StatusCode)
-	}
-
-	var aiResp aiChatResponse
-	if err := json.Unmarshal(respBytes, &aiResp); err != nil {
-		return "", err
-	}
-	if len(aiResp.Choices) == 0 {
-		return "", fmt.Errorf("empty ai response")
-	}
-
-	return aiResp.Choices[0].Message.Content, nil
 }
 
 var stopWords = map[string]bool{
@@ -159,40 +92,50 @@ var wordWeights = map[string]int{
 }
 
 var synonyms = map[string][]string{
-	"murah":      {"murah", "ekonomis", "hemat", "terjangkau", "budget", "low cost", "miring"},
-	"mewah":      {"mewah", "luxury", "premium", "eksklusif", "vip", "elite"},
-	"luas":       {"luas", "lapang", "besar", "spacious", "legawa"},
-	"nyaman":     {"nyaman", "comfortable", "enak", "cozy", "hangat"},
-	"tenang":     {"tenang", "sunyi", "quiet", "damai", "peaceful"},
-	"keluarga":   {"keluarga", "family", "anak", "ramai", "rombongan"},
-	"pasangan":   {"pasangan", "honeymoon", "romantis", "couple", "bulan madu"},
-	"bisnis":     {"bisnis", "business", "kerja", "meeting", "rapat"},
-	"sendiri":    {"sendiri", "solo", "single", "personal"},
-	"menginap":   {"menginap", "inap", "tidur", "stay", "istirahat"},
-	"liburan":    {"liburan", "vacation", "holiday", "healing", "staycation", "piknik"},
+	"murah":       {"murah", "ekonomis", "hemat", "terjangkau", "budget", "low cost", "miring"},
+	"mewah":       {"mewah", "luxury", "premium", "eksklusif", "vip", "elite"},
+	"luas":        {"luas", "lapang", "besar", "spacious", "legawa"},
+	"nyaman":      {"nyaman", "comfortable", "enak", "cozy", "hangat"},
+	"tenang":      {"tenang", "sunyi", "quiet", "damai", "peaceful"},
+	"keluarga":    {"keluarga", "family", "anak", "ramai", "rombongan"},
+	"pasangan":    {"pasangan", "honeymoon", "romantis", "couple", "bulan madu"},
+	"bisnis":      {"bisnis", "business", "kerja", "meeting", "rapat"},
+	"sendiri":     {"sendiri", "solo", "single", "personal"},
+	"menginap":    {"menginap", "inap", "tidur", "stay", "istirahat"},
+	"liburan":     {"liburan", "vacation", "holiday", "healing", "staycation", "piknik"},
 	"pemandangan": {"pemandangan", "view", "panorama", "scenery", "lanskap"},
-	"pelayanan":  {"pelayanan", "service", "layanan", "fasilitas"},
+	"pelayanan":   {"pelayanan", "service", "layanan", "fasilitas"},
 }
 
 var intentTemplates = map[string]map[string]int{
-	"honeymoon": {"Suite": 8, "Deluxe": 6},
-	"bulan madu": {"Suite": 8, "Deluxe": 6},
-	"romantis":  {"Suite": 7, "Deluxe": 5},
-	"keluarga":  {"Standard": 5, "Deluxe": 4},
-	"family":    {"Standard": 5, "Deluxe": 4},
-	"bisnis":    {"Deluxe": 5, "Standard": 3},
-	"business":  {"Deluxe": 5, "Standard": 3},
-	"mewah":     {"Suite": 8, "Deluxe": 4},
-	"luxury":    {"Suite": 8, "Deluxe": 4},
-	"murah":     {"Standard": 6},
-	"budget":    {"Standard": 6},
-	"ekonomis":  {"Standard": 6},
-	"hemat":     {"Standard": 6},
-	"kolam":     {"Suite": 6},
-	"renang":    {"Suite": 6},
+	"honeymoon":       {"Honeymoon Suite": 9, "Suite": 6, "Deluxe": 4},
+	"bulan madu":      {"Honeymoon Suite": 9, "Suite": 6, "Deluxe": 4},
+	"romantis":        {"Honeymoon Suite": 8, "Suite": 6, "Deluxe": 4},
+	"pasangan":        {"Honeymoon Suite": 7, "Deluxe": 5},
+	"couple":          {"Honeymoon Suite": 7, "Deluxe": 5},
+	"keluarga":        {"Family Room": 9, "Standard": 4, "Deluxe": 3},
+	"family":          {"Family Room": 9, "Standard": 4, "Deluxe": 3},
+	"anak":            {"Family Room": 8, "Standard": 4},
+	"bisnis":          {"Business Suite": 9, "Deluxe": 4, "Standard": 2},
+	"business":        {"Business Suite": 9, "Deluxe": 4, "Standard": 2},
+	"mewah":           {"Pool Villa": 8, "Suite": 7, "Honeymoon Suite": 5},
+	"luxury":          {"Pool Villa": 9, "Suite": 7, "Honeymoon Suite": 6},
+	"eksklusif":       {"Pool Villa": 8, "Honeymoon Suite": 6},
+	"vip":             {"Pool Villa": 8, "Suite": 5},
+	"villa":           {"Pool Villa": 10},
+	"murah":           {"Economy": 8, "Standard": 5},
+	"budget":          {"Economy": 8, "Standard": 5},
+	"ekonomis":        {"Economy": 9, "Standard": 4},
+	"hemat":           {"Economy": 8, "Standard": 5},
+	"backpacker":      {"Economy": 10},
+	"kolam":           {"Pool Villa": 7, "Suite": 6},
+	"renang":          {"Pool Villa": 7, "Suite": 6},
+	"jacuzzi":         {"Honeymoon Suite": 7},
+	"pemandangan":     {"Pool Villa": 6, "Honeymoon Suite": 5, "Deluxe": 3},
+	"sunset":          {"Honeymoon Suite": 7, "Pool Villa": 6},
 }
 
-func keywordMatch(roomTypes []clients.RoomTypeDTO, message string) string {
+func keywordMatch(roomTypes []clients.RoomTypeDTO, rooms []clients.RoomDTO, message string) string {
 	lower := strings.ToLower(strings.TrimSpace(message))
 
 	templateBonuses := make(map[string]int)
@@ -302,8 +245,15 @@ func keywordMatch(roomTypes []clients.RoomTypeDTO, message string) string {
 		best = scored{bestP, 1}
 	}
 
-	return fmt.Sprintf("Berdasarkan preferensi Anda, kami merekomendasikan kamar **%s** dengan harga Rp%.0f/malam. %s",
-		best.roomType.Name, best.roomType.Price, best.roomType.Description)
+	roomMap := make(map[uint][]string)
+	for _, r := range rooms {
+		if r.Availability {
+			roomMap[r.RoomTypeID] = append(roomMap[r.RoomTypeID], r.RoomNumber)
+		}
+	}
+
+	return fmt.Sprintf("Berdasarkan preferensi Anda, kami merekomendasikan tipe **%s**%s dengan harga Rp%.0f/malam. %s",
+		best.roomType.Name, formatRoomNumbers(roomMap[best.roomType.ID]), best.roomType.Price, best.roomType.Description)
 }
 
 func containsAny(s string, terms []string) bool {

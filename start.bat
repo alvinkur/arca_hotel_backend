@@ -35,6 +35,10 @@ echo Starting Report Service (port 8007)...
 start "Report Service" cmd /k "go run services/report-service/main.go"
 timeout /t 1 >nul
 
+echo Starting ML Service (port 8010)...
+start "ML Service" cmd /k "call services\ml-service\run.bat"
+timeout /t 3 >nul
+
 echo Starting AI Service (port 8008)...
 start "AI Service" cmd /k "go run services/ai-service/main.go"
 timeout /t 2 >nul
@@ -48,12 +52,3 @@ echo ============================================
 echo   All services started!
 echo   Open: http://localhost:8080/login
 echo.
-echo   Login credentials:
-echo     Owner:    owner@arca.com    / password123
-echo     Staff:    staff@arca.com    / password123
-echo     Customer: customer@arca.com / password123
-echo.
-echo   Run seed.sql first to create initial data:
-echo     psql -U postgres -d db_hotel_arca -f seed.sql
-echo ============================================
-pause

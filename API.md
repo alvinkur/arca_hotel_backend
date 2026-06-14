@@ -286,7 +286,7 @@ DELETE /api/revenue_reports/:id → delete
 { "reply": "Berdasarkan preferensi Anda, kami merekomendasikan kamar **Standard** dengan harga Rp350000/malam. ..." }
 ```
 
-Fallback: if no `AI_API_KEY` is set, the service uses keyword matching (Indonesian). Works offline.
+Uses TF-IDF + Cosine Similarity via ml-service. Falls back to keyword matching if ml-service is unavailable.
 
 ---
 
